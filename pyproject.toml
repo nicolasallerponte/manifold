@@ -1,0 +1,74 @@
+[project]
+name = "manifold-debug"
+version = "0.1.0"
+description = "Real-time visual debugger for embedding spaces in contrastive learning"
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.11"
+keywords = ["machine-learning", "embeddings", "contrastive-learning", "debugging", "visualization"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+dependencies = [
+    "torch>=2.1.0",
+    "numpy>=1.26.0",
+    "umap-learn>=0.5.5",
+    "websockets>=12.0",
+    "fastapi>=0.110.0",
+    "uvicorn>=0.29.0",
+    "einops>=0.7.0",
+    "rich>=13.7.0",
+]
+
+[project.optional-dependencies]
+lightning = ["pytorch-lightning>=2.2.0"]
+huggingface = ["transformers>=4.40.0"]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.23.0",
+    "ruff>=0.4.0",
+    "mypy>=1.9.0",
+]
+all = ["manifold-debug[lightning,huggingface,dev]"]
+
+[project.scripts]
+manifold = "manifold.server.watcher:cli"
+
+[project.urls]
+Homepage = "https://github.com/nicolasallerponte/manifold"
+Repository = "https://github.com/nicolasallerponte/manifold"
+Issues = "https://github.com/nicolasallerponte/manifold/issues"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["manifold"]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0.0",
+    "ruff>=0.4.0",
+    "mypy>=1.9.0",
+]
+
+[tool.ruff]
+line-length = 88
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = false
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
