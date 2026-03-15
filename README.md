@@ -12,7 +12,7 @@ Stop finding out your embeddings collapsed after training.
 **manifold** shows you the geometry of your representation space in real time.
 
 ---
-
+# NOT IMPLEMENTED YET
 ## one line to integrate
 ```python
 from manifold import watch
