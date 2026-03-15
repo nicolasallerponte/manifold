@@ -18,7 +18,7 @@ def test_hook_captures_metrics():
     model = _make_encoder()
     captured = []
 
-    hook = watch(model, log_every=1, on_metrics=lambda step, m: captured.append(m))
+    hook = watch(model, log_every=1, on_metrics=lambda step, m, emb: captured.append(m))
 
     x = torch.randn(64, 32)
     with torch.no_grad():
@@ -54,11 +54,11 @@ def test_context_manager():
 def test_log_every_respected():
     model = _make_encoder()
     captured = []
-    hook = watch(model, log_every=10, on_metrics=lambda s, m: captured.append(m))
+    hook = watch(model, log_every=10, on_metrics=lambda s, m, emb: captured.append(m))
 
     with torch.no_grad():
         for _ in range(25):
             model(torch.randn(64, 32))
 
     hook.remove()
-    assert len(captured) == 2  # steps 10 y 20
+    assert len(captured) == 2
