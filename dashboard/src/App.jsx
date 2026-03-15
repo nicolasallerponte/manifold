@@ -9,10 +9,10 @@ const WS_URL = "ws://127.0.0.1:7331/ws";
 const MAX_HISTORY = 200;
 
 const METRIC_META = {
-  uniformity:     { label: "UNIFORMITY",     good: "low",  unit: "" },
-  alignment:      { label: "ALIGNMENT",      good: "low",  unit: "" },
-  isotropy:       { label: "ISOTROPY",       good: "high", unit: "" },
-  effective_rank: { label: "EFF. RANK",      good: "high", unit: "" },
+  uniformity:     { label: "UNIFORMITY",  good: "low"  },
+  alignment:      { label: "ALIGNMENT",   good: "low"  },
+  isotropy:       { label: "ISOTROPY",    good: "high" },
+  effective_rank: { label: "EFF. RANK",   good: "high" },
 };
 
 export default function App() {
@@ -20,6 +20,7 @@ export default function App() {
   const [history, setHistory] = useState([]);
   const [latest, setLatest] = useState(null);
   const [alarms, setAlarms] = useState([]);
+  const [umapPoints, setUmapPoints] = useState(null);
   const wsRef = useRef(null);
 
   useEffect(() => {
@@ -30,10 +31,12 @@ export default function App() {
       ws.onclose = () => { setConnected(false); setTimeout(connect, 2000); };
       ws.onmessage = (e) => {
         const { step, metrics } = JSON.parse(e.data);
-        const point = { step, ...metrics };
+        const { umap_points, ...rest } = metrics;
+        const point = { step, ...rest };
         setLatest(point);
         setHistory((prev) => [...prev.slice(-MAX_HISTORY), point]);
-        checkAlarms(step, metrics);
+        if (umap_points) setUmapPoints(umap_points);
+        checkAlarms(step, rest);
       };
     }
     connect();
@@ -42,10 +45,14 @@ export default function App() {
 
   function checkAlarms(step, metrics) {
     const triggered = [];
-    if (metrics.isotropy < 0.1) triggered.push({ step, type: "danger", msg: "ISOTROPY < 0.1 // dimensional collapse detected" });
-    if (metrics.effective_rank < 5) triggered.push({ step, type: "danger", msg: "EFF_RANK < 5 // severe representation collapse" });
-    if (metrics.uniformity > -0.5) triggered.push({ step, type: "warn", msg: "UNIFORMITY > -0.5 // embeddings clustering" });
-    if (triggered.length > 0) setAlarms((prev) => [...triggered, ...prev].slice(0, 50));
+    if (metrics.isotropy !== undefined && metrics.isotropy < 0.02)
+      triggered.push({ step, type: "danger", msg: "ISOTROPY < 0.02 // dimensional collapse detected" });
+    if (metrics.effective_rank !== undefined && metrics.effective_rank < 5)
+      triggered.push({ step, type: "danger", msg: "EFF_RANK < 5 // severe representation collapse" });
+    if (metrics.uniformity !== undefined && metrics.uniformity > -0.5)
+      triggered.push({ step, type: "warn", msg: "UNIFORMITY > -0.5 // embeddings clustering" });
+    if (triggered.length > 0)
+      setAlarms((prev) => [...triggered, ...prev].slice(0, 50));
   }
 
   const cur = latest ?? {};
@@ -57,7 +64,6 @@ export default function App() {
       <StatusBar connected={connected} step={latest?.step} />
       <main className="p-3 space-y-3">
 
-        {/* metric cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
           {Object.entries(METRIC_META).map(([key, meta]) => (
             <MetricCard
@@ -70,7 +76,6 @@ export default function App() {
           ))}
         </div>
 
-        {/* dead dims + spread */}
         <div className="grid grid-cols-2 gap-2">
           <div className="panel p-4">
             <div className="text-textDim text-xs mb-2 tracking-widest">DEAD_DIMS</div>
@@ -88,16 +93,23 @@ export default function App() {
           </div>
         </div>
 
-        {/* charts + umap */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-2">
           <div className="lg:col-span-2 space-y-2">
-            <MetricChart history={history} metrics={["uniformity", "isotropy"]} colors={["#00ff88", "#4488ff"]} />
-            <MetricChart history={history} metrics={["effective_rank"]} colors={["#ffaa00"]} />
+            <MetricChart
+              history={history}
+              metrics={["uniformity", "isotropy"]}
+              colors={["#00ff88", "#4488ff"]}
+            />
+            <MetricChart
+              history={history}
+              metrics={["effective_rank"]}
+              colors={["#ffaa00"]}
+            />
+            <AlarmPanel alarms={alarms} />
           </div>
-          <UMAPPanel embeddings={cur.umap_points} />
+          <UMAPPanel embeddings={umapPoints} />
         </div>
 
-        <AlarmPanel alarms={alarms} />
       </main>
     </div>
   );

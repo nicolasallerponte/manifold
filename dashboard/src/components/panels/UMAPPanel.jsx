@@ -1,27 +1,69 @@
+import { useEffect, useRef } from "react";
+
 export default function UMAPPanel({ embeddings }) {
-  const hasData = embeddings && embeddings.length > 0;
+  const canvasRef = useRef(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width;
+    canvas.height = rect.height;
+
+    const ctx = canvas.getContext("2d");
+    const W = canvas.width;
+    const H = canvas.height;
+
+    ctx.clearRect(0, 0, W, H);
+
+    // grid
+    ctx.strokeStyle = "rgba(0,255,136,0.06)";
+    ctx.lineWidth = 0.5;
+    for (let x = 0; x < W; x += 32) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); }
+    for (let y = 0; y < H; y += 32) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); }
+
+    // axes
+    ctx.strokeStyle = "rgba(0,255,136,0.15)";
+    ctx.lineWidth = 0.5;
+    ctx.beginPath(); ctx.moveTo(W / 2, 0); ctx.lineTo(W / 2, H); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0, H / 2); ctx.lineTo(W, H / 2); ctx.stroke();
+
+    if (!embeddings || embeddings.length === 0) {
+      ctx.fillStyle = "rgba(0,255,136,0.2)";
+      ctx.font = "11px 'Roboto Mono', monospace";
+      ctx.textAlign = "center";
+      ctx.fillText("NO_SIGNAL", W / 2, H / 2 - 8);
+      ctx.fillText("waiting for data", W / 2, H / 2 + 8);
+      return;
+    }
+
+    const xs = embeddings.map(([x]) => x);
+    const ys = embeddings.map(([, y]) => y);
+    const minX = Math.min(...xs), maxX = Math.max(...xs);
+    const minY = Math.min(...ys), maxY = Math.max(...ys);
+    const pad = 16;
+
+    embeddings.forEach(([x, y]) => {
+      const px = pad + ((x - minX) / (maxX - minX + 1e-8)) * (W - pad * 2);
+      const py = pad + ((y - minY) / (maxY - minY + 1e-8)) * (H - pad * 2);
+      ctx.beginPath();
+      ctx.arc(px, py, 2.5, 0, Math.PI * 2);
+      ctx.fillStyle = "rgba(0,255,136,0.7)";
+      ctx.shadowBlur = 6;
+      ctx.shadowColor = "#00ff88";
+      ctx.fill();
+      ctx.shadowBlur = 0;
+    });
+  }, [embeddings]);
+
   return (
-    <div className="panel p-3 flex flex-col" style={{ minHeight: 220 }}>
-      <div className="text-textDim text-xs tracking-widest mb-3">UMAP_PROJECTION</div>
-      {hasData ? (
-        <svg className="flex-1 w-full" viewBox="0 0 200 200">
-          <line x1="0" y1="100" x2="200" y2="100" stroke="#1a1f2e" strokeWidth="0.5" />
-          <line x1="100" y1="0" x2="100" y2="200" stroke="#1a1f2e" strokeWidth="0.5" />
-          {embeddings.map(([x, y], i) => (
-            <circle key={i} cx={x} cy={y} r="1.5" fill="#00ff88" opacity="0.5"
-              style={{ filter: "drop-shadow(0 0 2px #00ff88)" }} />
-          ))}
-        </svg>
-      ) : (
-        <div className="flex-1 flex flex-col items-center justify-center gap-3">
-          <div className="w-full h-px bg-border" />
-          <div className="text-xs text-textDim tracking-widest text-center">
-            NO_SIGNAL<br />
-            <span className="text-phosphor opacity-30">waiting for data</span>
-          </div>
-          <div className="w-full h-px bg-border" />
-        </div>
-      )}
+    <div className="panel flex flex-col" style={{ minHeight: 400 }}>
+      <div className="text-textDim text-xs tracking-widest p-3 pb-1">UMAP_PROJECTION</div>
+      <canvas
+        ref={canvasRef}
+        style={{ width: "100%", flex: 1, display: "block" }}
+      />
     </div>
   );
 }

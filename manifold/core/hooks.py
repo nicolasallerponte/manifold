@@ -42,7 +42,6 @@ class EmbeddingHook:
             return
 
         embeddings = embeddings.detach().to(self.device).float()
-
         if embeddings.ndim != 2:
             return
 
@@ -51,11 +50,11 @@ class EmbeddingHook:
 
         with self._lock:
             for k, v in metrics.items():
-                if k != "dead_dimensions" and k != "angular_spread":
+                if k not in ("dead_dimensions", "angular_spread"):
                     self._history[k].append(v)
 
         if self.on_metrics:
-            self.on_metrics(self._step, metrics)
+            self.on_metrics(self._step, metrics, embeddings)
 
     def _extract_tensor(self, output) -> torch.Tensor | None:
         if isinstance(output, torch.Tensor):
@@ -84,7 +83,7 @@ class EmbeddingHook:
 def watch(
     module: torch.nn.Module,
     log_every: int = 100,
-    on_metrics: Callable[[int, dict], None] | None = None,
+    on_metrics: Callable[[int, dict, torch.Tensor], None] | None = None,
 ) -> EmbeddingHook:
     """
     One-liner API.
