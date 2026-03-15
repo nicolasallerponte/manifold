@@ -25,13 +25,12 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-lightning = ["pytorch-lightning>=2.2.0"]
-huggingface = ["transformers>=4.40.0"]
 dev = [
     "pytest>=8.0.0",
     "pytest-asyncio>=0.23.0",
     "ruff>=0.4.0",
     "mypy>=1.9.0",
+    "httpx>=0.27.0",
 ]
 all = ["manifold-debug[lightning,huggingface,dev]"]
 
@@ -55,6 +54,7 @@ dev = [
     "pytest>=8.0.0",
     "ruff>=0.4.0",
     "mypy>=1.9.0",
+    "httpx>=0.27.0",
 ]
 
 [tool.ruff]
